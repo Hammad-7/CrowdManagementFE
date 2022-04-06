@@ -12,6 +12,15 @@ function InfoBox(props) {
    * text-red-600
    */
 
+  function renderValue(val){
+    if(val){
+      return val
+    }
+    else{
+      return "--"
+    }
+  }
+
   return (
     <div className={`card flex-1 bg-white border-t-8 border-${props.color} mr-3 p-4 rounded-md pb-6 shadow-info hover:shadow-xl transition-all`}>
       <div className='cardContent'>
