@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import InfoBox from './components/InfoBox/InfoBox';
+import captureVideoFrame from "capture-video-frame";
 import axios from 'axios'
 import './App.css';
 
@@ -9,8 +9,10 @@ function App() {
   const [warning, setWarning] = useState("None")
   const [loading, setLoading] = useState(false)
   const [text, setText] = useState("Normal")
-
-  const [video,setVideo] = useState(null)
+  const [frame, setFrame] = useState(null)
+  const [color, setColor] = useState("green-500")
+  const [image, setImage] = useState(null)
+  const [type, setType] = useState("Image")
 
   const data = [
     {
@@ -33,9 +35,6 @@ function App() {
     },
   ]
 
-  const [color, setColor] = useState("green-500")
-  const [image, setImage] = useState(null)
-
 
   const hiddenFileInput = useRef(null);
 
@@ -43,7 +42,7 @@ function App() {
     hiddenFileInput.current.click();
   };
 
-  const handleChange = async (event) => {
+  const handleImageChange = async (event) => {
     setLoading(true)
     const fileUploaded = event.target.files[0];
     console.log(fileUploaded);
@@ -63,15 +62,45 @@ function App() {
     setLoading(false)
     console.log("Done!!")
     setTraffic(result2)
-    if(result2==="Heavily_Crowded")
-    setWarning("Warning! Be alert!")
+    if (result2 === "Heavily_Crowded")
+      setWarning("Warning! Be alert!")
   }
 
-  // function renderResults(){
-  //   if (loading){
+  const handleVideoChange = async (event) => {
+    const fileUploaded = event.target.files[0];
+    console.log(fileUploaded);
+    setImage(URL.createObjectURL(fileUploaded));
+  }
 
-  //   }
-  // }
+  const videoProcess = async () => {
+    setLoading(true)
+    const frame2 = captureVideoFrame("uploaded-video", "jpeg")
+    console.log("Frame Captured!")
+    console.log(frame2)
+    setFrame(frame2.dataUri)
+
+    const response = await fetch(frame2.dataUri)
+    const blob = await response.blob()
+    const file = new File([blob], 'dot.jpg', { type: 'image/jpeg' })
+
+    const formData = new FormData();
+    formData.append('file', file)
+    let url = "http://127.0.0.1:8000/predictCount/"
+    let res = await axios.post(url, formData);
+    let result2 = res.data;
+    console.log(result2)
+    setCount(result2);
+    url = 'http://127.0.0.1:8000/predictClass/';
+    res = await axios.post(url, formData);
+    result2 = res.data;
+    setCategory(result2)
+    setLoading(false)
+    console.log("Done!!")
+    setTraffic(result2)
+    if (result2 === "Heavily_Crowded")
+      setWarning("Warning! Be alert!")
+  }
+
 
   function setTraffic(result) {
     console.log("Here I am!!")
@@ -92,43 +121,97 @@ function App() {
       setColor("blue-700")
       setText("Slow!")
     }
-    else{
+    else {
       setColor("green-500")
       setText("Normal")
     }
   }
 
 
-  function renderImage() {
-    if (image) {
-      return (
-        <div className={`h-500 m-2 bg-gray-200 rounded-lg flex flex-col justify-center items-center`}>
-          <img src={image} className="w-full h-full rounded-lg" alt="Uploaded file" />
-        </div>
-      )
-    }
-    else {
-      return (
-        <div className={`h-500 m-2 bg-gray-200 rounded-lg flex flex-col justify-center items-center`}>
-          <p className="text-gray-600">Input an image of the crowd to get predictions</p>
-          <button className="bg-green-500 hover:bg-black text-white font-bold py-2 px-4 rounded mt-4 cursor-pointer transition" onClick={handleClick}>Upload an image</button>
-          <input
-            type="file"
-            name="file"
-            ref={hiddenFileInput}
-            onChange={handleChange}
-            style={{ display: 'none' }}
-          />
-        </div>
-      )
+  function renderFrame() {
+    if (type === "Video") {
+      if (frame) {
+        return (
+          <div className="mb-2">
+            <h1 className="text-xl font-bold">Captured Frame</h1>
+            <img src={frame} alt="captured frame"></img>
+          </div>
+        )
+      }
+      else {
+        return (
+          <div className="mb-2">
+            <h1 className="text-xl font-bold">Captured frame</h1>
+            <img src="noImage.png" alt="no captured frame"/>
+          </div>
+
+        )
+      }
     }
   }
 
-  // function renderCount(){
-  //   if(count)
+  function renderDisplay() {
+    console.log(type)
+    if (type === "Image") {
+      if (image) {
+        return (
+          <div className={`h-500 m-2 bg-gray-200 rounded-lg flex flex-col justify-center items-center`}>
+            <img id="uploaded-video" src={image} className="w-full h-full rounded-lg" alt="Uploaded file" />
+          </div>
+        )
+      }
+      else {
+        return (
+          <div className={`h-500 m-2 bg-gray-200 rounded-lg flex flex-col justify-center items-center`}>
+            <p className="text-gray-600">Input an image of the crowd to get predictions</p>
+            <button className="bg-green-500 hover:bg-black text-white font-bold py-2 px-4 rounded mt-4 cursor-pointer transition" onClick={handleClick}>Upload an image</button>
+            <input
+              type="file"
+              name="file"
+              ref={hiddenFileInput}
+              onChange={handleImageChange}
+              style={{ display: 'none' }}
+            />
+          </div>
+        )
+      }
+    }
+    else {
+      if (image) {
+        return (
+          <div className={`h-500 m-2 bg-gray-200 rounded-lg flex flex-col justify-center items-center`}>
+            <video id="uploaded-video" src={image} className="w-full h-full rounded-lg" alt="Uploaded file" autoPlay muted />
+          </div>
+        )
+      }
+      else {
+        return (
+          <div className={`h-500 m-2 bg-gray-200 rounded-lg flex flex-col justify-center items-center`}>
+            <p className="text-gray-600">Input a video of crowd.</p>
+            <button className="bg-green-500 hover:bg-black text-white font-bold py-2 px-4 rounded mt-4 cursor-pointer transition" onClick={handleClick}>Upload a video</button>
+            <input
+              type="file"
+              name="file"
+              ref={hiddenFileInput}
+              onChange={handleVideoChange}
+              style={{ display: 'none' }}
+            />
+          </div>
+        )
+      }
+    }
+  }
 
-  // }
-
+  function renderResult(i){
+    if(loading){
+      return(
+        <div>
+        <div style={{borderTopColor:"transparent"}} class="w-8 h-8 border-4 border-black border-solid rounded-full animate-spin"></div>
+      </div>
+      )
+    }
+    else return (data[i].value)
+  }
 
 
 
@@ -137,42 +220,72 @@ function App() {
       <div className='app__left'>
         <div className='app__header'>
           <h1 className="text-4xl font-bold text-green-700">Crowd Management Software</h1>
+
+          <select className="px-3 py-2 border-2 rounded-xl font-bold text-xl border-red-600" onChange={(e) => {
+            setType(e.target.value)
+            setImage(null)
+            setCategory("--")
+            setCount(0)
+            setWarning("None")
+            setColor("green-500")
+            setText("Normal")
+          }}>
+            <option>Image</option>
+            <option>Video</option>
+          </select>
+
         </div>
         <div className='app__stats py-5'>
           <div className="grid grid-cols-3 gap-5">
-            {data.map((val, ind) => (
-              <InfoBox title={val.heading} value={val.value} desc={val.description} color={val.color} key={ind} />
-            ))}
+            <div className={`card flex-1 bg-white border-t-8 border-green-600 mr-3 p-4 rounded-md pb-6 shadow-info hover:shadow-xl transition-all`}>
+              <div className='cardContent'>
+                <div className='title font-medium text-2xl'>
+                  No. of People
+                </div>
+                <div className={`font-bold text-green-600 text-3xl mb-2 py-3`}>
+                  {renderResult(0)}
+                </div>
+                <div>
+                  {data[0].description}
+                </div>
+              </div>
+            </div>
+
+            <div className={`card flex-1 bg-white border-t-8 border-amber-900 mr-3 p-4 rounded-md pb-6 shadow-info hover:shadow-xl transition-all`}>
+              <div className='cardContent'>
+                <div className='title font-medium text-2xl'>
+                  Crowd Classification
+                </div>
+                <div className={`font-bold text-amber-900 text-3xl mb-2 py-3`}>
+                  {renderResult(1)}
+                </div>
+                <div>
+                  {data[1].description}
+                </div>
+              </div>
+            </div>
+
+            <div className={`card flex-1 bg-white border-t-8 border-red-600 mr-3 p-4 rounded-md pb-6 shadow-info hover:shadow-xl transition-all`}>
+              <div className='cardContent'>
+                <div className='title font-medium text-2xl'>
+                  Warning Status
+                </div>
+                <div className={`font-bold text-red-600 text-3xl mb-2 py-3`}>
+                  {data[2].value}
+                </div>
+                <div>
+                  {data[2].description}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-6">
           <div className="col-span-2 bg-white h-600 rounded-lg p-2 shadow-lg flex flex-col ">
-            {/* <div className={`h-500 m-2 bg-gray-200 rounded-lg flex flex-col justify-center items-center`}>
-              <p className="text-gray-600">Input an image of the crowd to get predictions</p>
-              <button className="bg-green-500 hover:bg-black text-white font-bold py-2 px-4 rounded mt-4 cursor-pointer transition" onClick={handleClick}>Upload an image</button>
-              <input
-                type="file"
-                name="file"
-                ref={hiddenFileInput}
-                onChange={handleChange}
-                style={{ display: 'none' }}
-              />
-            </div> */}
-            {renderImage()}
-            <div className="flex justify-between mr-2 ">
-              <div>
-                <button className="bg-green-500 hover:bg-black text-white font-bold py-2 px-4 rounded mt-4 cursor-pointer transition ml-2" onClick={handleClick}>Upload image</button>
-                <input
-                  type="file"
-                  name="file"
-                  ref={hiddenFileInput}
-                  onChange={handleChange}
-                  style={{ display: 'none' }}
-                />
-              </div>
-
+            {renderDisplay()}
+            <div className="flex justify-end mr-2 ">
               <div className="flex">
-                <div className="bg-green-500 mr-3  hover:bg-black text-white font-bold py-2 px-4 rounded mt-4 cursor-pointer transition">
+                <div className={`${type==="Video" ?"bg-green-500 mr-3  hover:bg-black text-white font-bold py-2 px-4 rounded mt-4 cursor-pointer transition" : "hidden"} `} onClick={videoProcess}>
                   Process
                 </div>
                 <div className="bg-red-600 hover:bg-black text-white font-bold py-2 px-4 rounded mt-4 cursor-pointer transition" onClick={() => {
@@ -182,6 +295,7 @@ function App() {
                   setWarning("None")
                   setColor("green-500")
                   setText("Normal")
+                  setFrame(null)
                 }}>
                   Reset
                 </div>
@@ -191,6 +305,7 @@ function App() {
           </div>
           <div className="p-2 bg-gray-600 rounded-lg flex flex-col">
             <div className="bg-white h-full flex flex-col p-2 rounded-lg shadow-info">
+              {renderFrame()}
               <h2 className="text-xl font-bold">Traffic Light color</h2>
               <div className="flex justify-center">
                 <div className={`h-20 w-20 bg-${color} m-10 relative rounded-full  flex justify-center items-center text-white font-semibold`}>
