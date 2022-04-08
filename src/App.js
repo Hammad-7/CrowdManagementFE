@@ -4,6 +4,8 @@ import axios from 'axios'
 import './App.css';
 
 function App() {
+
+  //state variables
   const [count, setCount] = useState(0)
   const [category, setCategory] = useState("--")
   const [warning, setWarning] = useState("None")
@@ -14,6 +16,7 @@ function App() {
   const [image, setImage] = useState(null)
   const [type, setType] = useState("Image")
 
+  //data for the infoboxes
   const data = [
     {
       heading: "No of people",
@@ -35,19 +38,21 @@ function App() {
     },
   ]
 
-
+  //for file Input
   const hiddenFileInput = useRef(null);
 
   const handleClick = () => {
     hiddenFileInput.current.click();
   };
 
+  //for uploading image
   const handleImageChange = async (event) => {
     setLoading(true)
     const fileUploaded = event.target.files[0];
     console.log(fileUploaded);
     setImage(URL.createObjectURL(fileUploaded));
 
+    //calling api for crowd counting
     const formData = new FormData();
     formData.append('file', fileUploaded)
     let url = "http://127.0.0.1:8000/predictCount/"
@@ -55,6 +60,8 @@ function App() {
     let result2 = res.data;
     console.log(result2)
     setCount(result2);
+
+    //calling api for crowd classification
     url = 'http://127.0.0.1:8000/predictClass/';
     res = await axios.post(url, formData);
     result2 = res.data;
@@ -66,12 +73,14 @@ function App() {
       setWarning("Warning! Be alert!")
   }
 
+  //function for handling video upload
   const handleVideoChange = async (event) => {
     const fileUploaded = event.target.files[0];
     console.log(fileUploaded);
     setImage(URL.createObjectURL(fileUploaded));
   }
 
+  //processing video on process
   const videoProcess = async () => {
     setLoading(true)
     const frame2 = captureVideoFrame("uploaded-video", "jpeg")
@@ -83,6 +92,7 @@ function App() {
     const blob = await response.blob()
     const file = new File([blob], 'dot.jpg', { type: 'image/jpeg' })
 
+    //api call for crowd counting model
     const formData = new FormData();
     formData.append('file', file)
     let url = "http://127.0.0.1:8000/predictCount/"
@@ -90,6 +100,8 @@ function App() {
     let result2 = res.data;
     console.log(result2)
     setCount(result2);
+
+    //api call for crowd classification model
     url = 'http://127.0.0.1:8000/predictClass/';
     res = await axios.post(url, formData);
     result2 = res.data;
@@ -102,8 +114,8 @@ function App() {
   }
 
 
+  //setting the color of traffic light on obtaining result
   function setTraffic(result) {
-    console.log("Here I am!!")
     console.log(result)
     if (result === "Heavily_Crowded") {
       setColor("red-600")
@@ -127,7 +139,7 @@ function App() {
     }
   }
 
-
+  //showing the captured frame
   function renderFrame() {
     if (type === "Video") {
       if (frame) {
@@ -150,8 +162,11 @@ function App() {
     }
   }
 
+  //changing display based on input type - image or video
   function renderDisplay() {
     console.log(type)
+
+    //for image upload
     if (type === "Image") {
       if (image) {
         return (
@@ -176,11 +191,13 @@ function App() {
         )
       }
     }
+
+    //for video upload
     else {
       if (image) {
         return (
           <div className={`h-500 m-2 bg-gray-200 rounded-lg flex flex-col justify-center items-center`}>
-            <video id="uploaded-video" src={image} className="w-full h-full rounded-lg" alt="Uploaded file" autoPlay muted />
+            <video id="uploaded-video" src={image} className="w-full h-full rounded-lg" alt="Uploaded file" autoPlay muted loop/>
           </div>
         )
       }
@@ -202,7 +219,9 @@ function App() {
     }
   }
 
+  //function for showing result
   function renderResult(i){
+    //if loading show loading spinner
     if(loading){
       return(
         <div>
@@ -237,6 +256,7 @@ function App() {
         </div>
         <div className='app__stats py-5'>
           <div className="grid grid-cols-3 gap-5">
+            {/*Crowd count infobox */}
             <div className={`card flex-1 bg-white border-t-8 border-green-600 mr-3 p-4 rounded-md pb-6 shadow-info hover:shadow-xl transition-all`}>
               <div className='cardContent'>
                 <div className='title font-medium text-2xl'>
@@ -251,6 +271,7 @@ function App() {
               </div>
             </div>
 
+            {/*Crowd Classification infobox */}
             <div className={`card flex-1 bg-white border-t-8 border-amber-900 mr-3 p-4 rounded-md pb-6 shadow-info hover:shadow-xl transition-all`}>
               <div className='cardContent'>
                 <div className='title font-medium text-2xl'>
@@ -265,6 +286,7 @@ function App() {
               </div>
             </div>
 
+            {/*Warning infobox */}
             <div className={`card flex-1 bg-white border-t-8 border-red-600 mr-3 p-4 rounded-md pb-6 shadow-info hover:shadow-xl transition-all`}>
               <div className='cardContent'>
                 <div className='title font-medium text-2xl'>
@@ -280,6 +302,7 @@ function App() {
             </div>
           </div>
         </div>
+        
         <div className="grid grid-cols-3 gap-6">
           <div className="col-span-2 bg-white h-600 rounded-lg p-2 shadow-lg flex flex-col ">
             {renderDisplay()}
